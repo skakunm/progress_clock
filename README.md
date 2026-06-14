@@ -58,6 +58,9 @@ open build/ProgressClock.app
 
 ### 4. Install to /Applications (optional)
 
+If you want the app available like a normal macOS application, install it to `/Applications`.
+This step is optional; you can also run the app directly from `build/ProgressClock.app`.
+
 ```bash
 ./install.sh
 ```
@@ -72,8 +75,12 @@ open /Applications/ProgressClock.app
 
 ## Launch at login
 
+If you want Progress Clock to start automatically, add it manually to login items:
+
 1. Open **System Settings → General → Login Items**
-2. Click **+** and add `ProgressClock.app`
+2. Click **+** and add `/Applications/ProgressClock.app`
+
+If the app is unsigned, macOS may warn on first launch. In that case, right-click the app and choose **Open**, or use **Open Anyway** in System Settings.
 
 ---
 
