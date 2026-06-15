@@ -1,28 +1,35 @@
 # Progress Clock
 
-A minimal macOS menu bar app that shows your day as a live progress bar — so you always know where you are in your day at a glance.
+A minimal macOS menu bar app that shows your day as a live progress bar — so you always know where you are at a glance.
 
-![Progress Clock in menu bar](assets/screenshot.png)
+**Stacked** (default) — day bar + thin activity stripe below it:
+![Stacked layout](assets/ss_stacked.png)
+
+**Side by side** — day and activity bars next to each other:
+![Side by side layout](assets/ss_sidebyside.png)
+
+**Single** — one bar, swap between day and activity with "Swap bars":
+![Single layout](assets/ss_single_day.png)
 
 ---
 
-## What it does
+## What it shows
 
-Progress Clock lives in your menu bar and draws **two progress bars**:
+| Bar | What it tracks |
+|-----|----------------|
+| **Day bar** (indigo) | How far through your waking day you are |
+| **Activity bar** (colored) | Progress within your current time block |
 
-| Bar | What it shows |
-|-----|---------------|
-| **Day bar** (tall) | How far through your waking day you are, with the current time |
-| **Activity bar** (thin stripe) | Progress within your current time block (work, free, morning, etc.) |
+Colors tell you what block you're in:
 
-Colors tell you what you're in right now:
+- 🟠 **Amber** — unscheduled time (morning, afternoon, evening)
+- 🟢 **Emerald** — work hours
+- 🟣 **Amethyst** — free time
+- 🔴 **Crimson** — sleep / night
 
-- 🟡 **Yellow** — unscheduled time (morning, afternoon, evening)
-- 🟢 **Green** — work hours
-- 🔵 **Blue** — free time
-- 🔴 **Red** — sleep / night
+Each bar can independently run **forward or backward** and fill from the **left or right**.
 
-Each bar can independently run **forward or backward**, and fill from the **left or right** — so you can set it up exactly how your brain wants to see time.
+Hover over the bar to see the current time and percentages. Click to open the menu.
 
 ---
 
@@ -35,82 +42,93 @@ Each bar can independently run **forward or backward**, and fill from the **left
 
 ## Install
 
-### 1. Clone the repo
+### Option A — Homebrew (recommended)
+
+```bash
+brew tap skakunm/progress_clock https://github.com/skakunm/progress_clock
+brew trust skakunm/progress_clock
+brew install --cask progress-clock
+```
+
+Homebrew handles the download and installation. If macOS shows a Gatekeeper prompt, run this once after installing:
+
+```bash
+xattr -d com.apple.quarantine /Applications/ProgressClock.app
+```
+
+### Option B — Build from source
 
 ```bash
 git clone https://github.com/skakunm/progress_clock.git
 cd progress_clock
-```
-
-### 2. Build
-
-```bash
 ./build.sh
 ```
 
-This compiles the app into `build/ProgressClock.app`.
-
-### 3. Run immediately (no install)
+#### Run immediately (no install)
 
 ```bash
 open build/ProgressClock.app
 ```
 
-### 4. Install to /Applications (optional)
-
-If you want the app available like a normal macOS application, install it to `/Applications`.
-This step is optional; you can also run the app directly from `build/ProgressClock.app`.
+#### Install to /Applications (optional)
 
 ```bash
 ./install.sh
 ```
 
-Then launch it with:
-
-```bash
-open /Applications/ProgressClock.app
-```
-
 ---
 
-## Launch at login
+## Uninstall
 
-If you want Progress Clock to start automatically, add it manually to login items:
+**Homebrew:**
+```bash
+brew uninstall --cask progress-clock
+```
 
-1. Open **System Settings → General → Login Items**
-2. Click **+** and add `/Applications/ProgressClock.app`
-
-If the app is unsigned, macOS may warn on first launch. In that case, right-click the app and choose **Open**, or use **Open Anyway** in System Settings.
+**Manual:**
+```bash
+pkill -x ProgressClock
+sudo rm -rf /Applications/ProgressClock.app
+# Then remove from System Settings → General → Login Items
+```
 
 ---
 
 ## Configuration
 
-Click the progress bar in your menu bar to open the menu. Everything is configurable from there — no config files to edit.
+Click the bar in the menu bar to open the menu. Everything is configured there — no files to edit.
 
-### What you can change
+### Layout
 
-**Day**
-- Wake time and sleep time (the full span of your day)
-- Direction: bar fills left→right or right→left
-- Fill anchor: bar grows from left or right
+| Mode | Description |
+|------|-------------|
+| **Stacked** | Day bar (tall) on top, activity bar (thin stripe) below — default |
+| **Side by side** | Two equal-height bars next to each other (double width) |
+| **Single** | One bar — use **Swap bars** to switch between day and activity |
 
-**Work block**
-- Start and end time
-- Enable / disable
-- Direction and fill anchor (independent from the day bar)
+**Swap bars** — reverses which bar is primary in every layout mode.
 
-**Free block**
-- Start and end time
-- Enable / disable
-- Direction and fill anchor
+### Show
 
-**Sleep**
-- Direction and fill anchor for the overnight bar
+What label is drawn inside the bar(s):
 
-### Editing times
+| Option | What you see |
+|--------|--------------|
+| **None** | No label — bars only |
+| **Time** | Current time (`12:34`) |
+| **Percentage** | Progress percentage (`56%`) |
+| **Both** | Time and percentage (`12:34 · 56%`) — M width and above only |
 
-Click any section in the menu → **Edit times…** and type in `HH:MM` format. Sleep time past midnight works fine (e.g. `01:00`).
+### Width
+
+Five levels: **XS · S · M · L · XL** — default is **M**. At XS/S, "Both" is disabled.
+
+### Per-interval settings (Day / Work / Free / Sleep)
+
+- **Direction** — bar fills forward (→) or backward (←)
+- **Fill anchor** — bar grows from the left or the right
+- **Enable / disable** — Work and Free blocks can be toggled off
+- **Edit times…** — type start/end times in `HH:MM`; sleep past midnight works (e.g. `01:00`)
 
 ---
 
@@ -120,11 +138,11 @@ Click any section in the menu → **Edit times…** and type in `HH:MM` format. 
 Wake ──────────────────────────────────────── Sleep
       [morning][  work  ][afternoon][free][evening]
 
-Day bar:      ████████████▶                     59% of waking day
-Activity bar: ████▶                             41% through "work"
+Day bar:      ████████████▶                     56% of waking day
+Activity bar: █████████████████▶                71% through "work"
 ```
 
-During sleep, both bars show the night in red — counting toward wake time.
+During sleep both bars run in red, counting toward wake time.
 
 ---
 
@@ -133,23 +151,15 @@ During sleep, both bars show the night in red — counting toward wake time.
 ```
 progress_clock/
 ├── src/
-│   └── main.swift      # entire app — ~500 lines, no dependencies
+│   └── main.swift      # entire app — ~700 lines, no dependencies
 ├── Info.plist           # app bundle metadata
 ├── build.sh             # compiles with swiftc → build/ProgressClock.app
-└── install.sh           # copies built app to /Applications
+├── install.sh           # copies built app to /Applications
+└── Casks/
+    └── progress-clock.rb  # Homebrew cask
 ```
 
 No Xcode project, no Swift Package Manager, no dependencies. Just `swiftc` and AppKit.
-
----
-
-## Building manually (optional)
-
-```bash
-swiftc -swift-version 5 -framework AppKit -framework Foundation \
-  -O -o build/ProgressClock.app/Contents/MacOS/ProgressClock \
-  src/main.swift
-```
 
 ---
 

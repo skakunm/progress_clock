@@ -21,8 +21,15 @@ swiftc \
   -o "$BUILD/MacOS/$APP" \
   "$DIR/src/main.swift"
 
-echo "Copying Info.plist..."
+echo "Copying Info.plist and icon..."
 cp "$DIR/Info.plist" "$BUILD/Info.plist"
+cp "$DIR/assets/AppIcon.icns" "$BUILD/Resources/AppIcon.icns"
+
+echo "Signing (ad-hoc)..."
+codesign --force --deep --sign - "$DIR/build/$APP.app"
+
+# Prevent Spotlight/Raycast from indexing the build dir (avoids duplicate app entries)
+touch "$DIR/build/.metadata_never_index"
 
 echo ""
 echo "Build complete: build/$APP.app"

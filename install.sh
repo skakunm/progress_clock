@@ -11,6 +11,15 @@ if [ ! -d "$BUILD" ]; then
     exit 1
 fi
 
+# Show what's currently installed
+if [ -d "$DEST" ]; then
+    CURRENT_VER=$(defaults read "$DEST/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
+    NEW_VER=$(defaults read "$BUILD/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
+    echo "Replacing $APP $CURRENT_VER → $NEW_VER in /Applications"
+    read -r -p "Continue? [y/N] " confirm
+    [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Cancelled."; exit 0; }
+fi
+
 # Kill any running instance
 pkill -x "$APP" 2>/dev/null || true
 
@@ -18,7 +27,7 @@ echo "Installing to /Applications..."
 cp -r "$BUILD" "/Applications/"
 
 echo ""
-echo "Done. Launch with:"
-echo "  open \"$DEST\""
+echo "Launching..."
+open "$DEST"
 echo ""
-echo "To start at login: System Settings › General › Login Items › add $DEST"
+echo "Done. To start at login: System Settings → General → Login Items → add $DEST"
