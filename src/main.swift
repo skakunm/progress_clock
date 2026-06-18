@@ -422,11 +422,78 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        let savedLevel = ConfigManager.shared.config.safeBarWidthLevel
+        // Create at XS first: a small item always gets a visible slot, which gives
+        // a trustworthy occlusion signal. We then grow to the saved width and let
+        // the notch correction shrink it back if it doesn't fit. (Born directly at
+        // a large width, macOS reports occlusion unreliably.)
+        var c = ConfigManager.shared.config; c.barWidthLevel = 1
+        ConfigManager.shared.config = c
         statusItem = NSStatusBar.system.statusItem(withLength: barWidth)
         statusItem.button?.imagePosition = .imageOnly
         statusItem.button?.imageScaling  = .scaleNone
         updateBar(); rebuildMenu()
         scheduleMinuteTimer()
+        restoreWidth(to: savedLevel)
+    }
+
+    // MARK: - Notch-aware width
+    //
+    // On a notched screen macOS lets a too-wide status item slide behind the
+    // notch, where it still reports a normal on-screen frame — so coordinates
+    // can't tell it's hidden. occlusionState can: it drops `.visible` when the
+    // item is off behind the notch. So after applying a width we check occlusion
+    // and, if hidden, step down a level at a time until the item is visible.
+
+    // Screen-space frame of the status item, or nil before it's placed.
+    private func itemScreenFrame() -> NSRect? {
+        guard let button = statusItem.button, let win = button.window else { return nil }
+        return win.convertToScreen(button.convert(button.bounds, to: nil))
+    }
+
+    // Right edge of the notch, or nil on screens without one.
+    private var notchRightEdge: CGFloat? {
+        guard #available(macOS 12.0, *),
+              let screen = NSScreen.main,
+              screen.safeAreaInsets.top > 0 else { return nil }
+        return screen.auxiliaryTopRightArea?.minX
+    }
+
+    private var itemIsVisible: Bool {
+        statusItem.button?.window?.occlusionState.contains(.visible) ?? false
+    }
+
+    // Apply a width level (persisted), then shrink it if it lands behind the notch.
+    private func setWidth(level: Int) {
+        var c = ConfigManager.shared.config; c.barWidthLevel = level
+        ConfigManager.shared.config = c
+        updateBar(); rebuildMenu()
+        correctForNotch(from: level)
+    }
+
+    private func correctForNotch(from level: Int) {
+        guard notchRightEdge != nil, level > 1 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self = self, !self.itemIsVisible else { return }   // visible: done
+            self.setWidth(level: level - 1)
+        }
+    }
+
+    // Wait until the XS item has a real menu-bar position, then grow to the saved
+    // width. On screens without a notch, apply it straight away.
+    private func restoreWidth(to savedLevel: Int, attempt: Int = 0) {
+        guard let notchX = notchRightEdge else { setWidth(level: savedLevel); return }
+        guard let frame = itemScreenFrame(), frame.maxX > notchX else {
+            if attempt < 40 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                    self?.restoreWidth(to: savedLevel, attempt: attempt + 1)
+                }
+            } else {
+                setWidth(level: savedLevel)
+            }
+            return
+        }
+        setWidth(level: savedLevel)
     }
 
     // Fires on the next full minute then repeats every 60 s, keeping HH:MM current.
@@ -776,7 +843,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Width / layout / label
 
-    @objc func setBarWidth(_ sender: NSMenuItem)   { mut { $0.barWidthLevel = sender.tag } }
+    @objc func setBarWidth(_ sender: NSMenuItem) {
+        setWidth(level: sender.tag)
+    }
+
     @objc func toggleSwapBars()                    { mut { $0.swapBars = !$0.swapBars } }
     @objc func setLayoutMode(_ sender: NSMenuItem) {
         guard let raw  = sender.representedObject as? String,
