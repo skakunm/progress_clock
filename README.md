@@ -56,6 +56,18 @@ Homebrew handles the download and installation. If macOS shows a Gatekeeper prom
 xattr -d com.apple.quarantine /Applications/ProgressClock.app
 ```
 
+**To update:**
+
+```bash
+brew update && brew upgrade --cask progress-clock
+```
+
+**To launch at login:**
+
+```bash
+osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/ProgressClock.app", hidden:false}'
+```
+
 ### Option B — Build from source
 
 ```bash
@@ -76,6 +88,12 @@ open build/ProgressClock.app
 ./install.sh
 ```
 
+**To launch at login:**
+
+```bash
+osascript -e 'tell application "System Events" to make login item at end with properties {path:"/Applications/ProgressClock.app", hidden:false}'
+```
+
 ---
 
 ## Uninstall
@@ -87,9 +105,9 @@ brew uninstall --cask progress-clock
 
 **Manual:**
 ```bash
+osascript -e 'tell application "System Events" to delete login item "ProgressClock"'
 pkill -x ProgressClock
 sudo rm -rf /Applications/ProgressClock.app
-# Then remove from System Settings → General → Login Items
 ```
 
 ---
